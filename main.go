@@ -16,11 +16,19 @@ func main() {
 
 	http.HandleFunc("/", HandleRoot)
 
+	http.HandleFunc("/count", HandleCount)
+
 	http.ListenAndServe(":8080", nil)
 }
 
 func HandleRoot(w http.ResponseWriter, req *http.Request) {
-	count.Count++
+	Render(w, "templates/index.html", count)
+}
+
+func HandleCount(w http.ResponseWriter, req *http.Request) {
+	if req.Method == "POST" {
+		count.Count++
+	}
 	Render(w, "templates/index.html", count)
 }
 
