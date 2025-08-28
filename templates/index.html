@@ -1,3 +1,5 @@
+{{ block "index" . }}
+
 <!doctype html>
 <html lang="en">
 	<head>
@@ -8,8 +10,16 @@
 	</head>
 	<body>
 		<main>
-			Count {{ .Count }}
-			<button hx-post="/count">number go up</button>
+			<div id="count">
+				{{ template "count" . }}
+			</div>
+			<button hx-post="/count" hx-target="#count">number go up</button>
 		</main>
 	</body>
 </html>
+
+{{ end }}
+
+{{ block "count" . }}
+Count {{ .Count }}
+{{ end }}
