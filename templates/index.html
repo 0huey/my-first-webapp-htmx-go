@@ -14,6 +14,9 @@
 				{{ template "count" . }}
 			</div>
 			<button hx-post="/count" hx-target="#count">number go up</button>
+			<hr />
+			{{ template "email form" . }}
+			{{ template "contacts" . }}
 		</main>
 	</body>
 </html>
@@ -21,5 +24,32 @@
 {{ end }}
 
 {{ block "count" . }}
-Count {{ .Count }}
+	Count {{ .Count }}
+{{ end }}
+
+{{ block "email form" . }}
+<div>
+	<form hx-post="/contacts" hx-target="#contacts">
+		name: <input type="text" name="name" />
+		email: <input type="email" name="email" />
+		<button type="submit">Create Contact</button>
+	</form>
+</div>
+{{ end }}
+
+{{ block "contacts" . }}
+<div id="contacts">
+	<table>
+		<tr>
+			<td style="border: solid">Name</td>
+			<td style="border: solid">Email</td>
+		</tr>
+	{{ range .Contacts }}
+		<tr>
+			<td style="border: solid" >{{ .Name }}</td>
+			<td style="border: solid" >{{ .Email }}</td>
+		</tr>
+	{{ end }}
+	</table>
+</div>
 {{ end }}
