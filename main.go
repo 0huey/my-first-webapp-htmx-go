@@ -10,18 +10,32 @@ type Contact struct {
 	Name string
 	Email string
 }
+type ContactSlice []Contact
 
-type IndexContext struct {
-	Count int
-	Contacts []Contact
+type FormData struct {
+	Values map[string]string
+	Errors map[string]string
 }
 
-var index_context IndexContext
+func newFormData() FormData {
+	return FormData{
+		Values: make(map[string]string),
+		Errors: make(map[string]string),
+	}
+}
+
+type ClientContext struct {
+	Count int
+	Contacts ContactSlice
+	FormErrors FormData
+}
+
+var context ClientContext
 
 func main() {
 	// some initial data
-	NewContact("john smith", "js@example.com")
-	NewContact("person", "person@example.com")
+	context.Contacts.AddContact(NewContact("john smith", "js@example.com"))
+	context.Contacts.AddContact(NewContact("person", "person@example.com"))
 
 	http.HandleFunc("/", HandleRoot)
 
@@ -33,16 +47,16 @@ func main() {
 }
 
 func HandleRoot(w http.ResponseWriter, req *http.Request) {
-	Render(w, "index", index_context)
+	Render(w, "index", context)
 }
 
 func HandleCount(w http.ResponseWriter, req *http.Request) {
-	index_context.Count++
-	Render(w, "count", index_context)
+	context.Count++
+	Render(w, "count", context)
 }
 
 func HandleContact(w http.ResponseWriter, req *http.Request) {
-	name :=  req.PostFormValue("name")
+	name  := req.PostFormValue("name")
 	email := req.PostFormValue("email")
 
 	if len(name) == 0 || len(email) == 0 {
@@ -50,13 +64,26 @@ func HandleContact(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	NewContact(name, email)
+	if context.Contacts.EmailExists(email) {
+		temp_context := context
+		temp_context.FormErrors = newFormData()
+		temp_context.FormErrors.Values["name"] = name
+		temp_context.FormErrors.Values["email"] = email
+		temp_context.FormErrors.Errors["message"] = "that email address already exists retard"
+		RenderError(w, "email form", temp_context, http.StatusConflict)
+		return
+	}
 
-	Render(w, "contacts", index_context)
+	new := NewContact(name, email)
+	context.Contacts.AddContact(new)
+	Render(w, "oob-contact", new)
+	Render(w, "email form", context)
 }
 
 func Render(w http.ResponseWriter, block string, context any) {
 	t := template.Must(template.ParseGlob("templates/*.html"))
+
+	w.Header().Add("Cache-Control", "no-cache")
 
 	err := t.ExecuteTemplate(w, block, context)
 
@@ -65,7 +92,25 @@ func Render(w http.ResponseWriter, block string, context any) {
 	}
 }
 
-func NewContact(name string, email string) {
-	c := Contact {Name: name, Email: email}
-	index_context.Contacts = append(index_context.Contacts, c)
+func RenderError(w http.ResponseWriter, block string, context any, code int) {
+	w.WriteHeader(code)
+	w.Header().Add("Cache-Control", "no-cache")
+	Render(w, block, context)
+}
+
+func NewContact(name string, email string) Contact {
+	return Contact {Name: name, Email: email}
+}
+
+func (c *ContactSlice) AddContact(new Contact) {
+	*c = append(*c, new)
+}
+
+func (c ContactSlice) EmailExists(email string) bool {
+	for _, contact := range c {
+		if contact.Email == email {
+			return true
+		}
+	}
+	return false
 }

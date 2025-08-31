@@ -1,5 +1,4 @@
 {{ block "index" . }}
-
 <!doctype html>
 <html lang="en">
 	<head>
@@ -7,20 +6,37 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>My First Web App in HTMX/Go</title>
 		<script src="https://unpkg.com/htmx.org/dist/htmx.min.js"></script>
+		<script>
+			document.addEventListener("DOMContentLoaded", (event) => {
+				document.body.addEventListener('htmx:beforeSwap', function(evt) {
+					if (evt.detail.xhr.status === 409) {
+						evt.detail.shouldSwap = true;
+						evt.detail.isError = false;
+					}
+				});
+			})
+		</script>
 	</head>
 	<body>
+		<header>
+			this is the header
+		</header>
+		<hr />
 		<main>
 			<div id="count">
 				{{ template "count" . }}
 			</div>
 			<button hx-post="/count" hx-target="#count">number go up</button>
 			<hr />
-			{{ template "email form" . }}
-			{{ template "contacts" . }}
+			<div>
+				{{ template "email form" . }}
+			</div>
+			<div>
+				{{ template "contacts" . }}
+			</div>
 		</main>
 	</body>
 </html>
-
 {{ end }}
 
 {{ block "count" . }}
@@ -28,28 +44,49 @@
 {{ end }}
 
 {{ block "email form" . }}
-<div>
-	<form hx-post="/contacts" hx-target="#contacts">
-		name: <input type="text" name="name" />
-		email: <input type="email" name="email" />
-		<button type="submit">Create Contact</button>
-	</form>
-</div>
+<form hx-post="/contacts" hx-swap="innerHTML">
+	name: <input
+		{{ if .FormErrors.Values.name }} value="{{ .FormErrors.Values.name }}" {{ end }}
+		type="text" name="name" />
+	email: <input
+		{{ if .FormErrors.Values.email }} value="{{ .FormErrors.Values.email }}" {{ end }}
+		type="email" name="email" />
+
+	{{ if .FormErrors.Errors.message }}
+		<div style="color: red">{{ .FormErrors.Errors.message }}</div>
+	{{ end }}
+	<button type="submit">Create Contact</button>
+</form>
 {{ end }}
 
 {{ block "contacts" . }}
-<div id="contacts">
-	<table>
+<table>
+	<thead>
 		<tr>
-			<td style="border: solid">Name</td>
-			<td style="border: solid">Email</td>
+			<th>Name</th>
+			<th>Email</th>
 		</tr>
+	</thead>
+	<tbody id="contacts-table">
 	{{ range .Contacts }}
-		<tr>
-			<td style="border: solid" >{{ .Name }}</td>
-			<td style="border: solid" >{{ .Email }}</td>
-		</tr>
+		{{ template "contact" . }}
 	{{ end }}
-	</table>
-</div>
+	</tbody>
+</table>
+{{ end }}
+
+{{ block "contact" . }}
+<tr>
+	<td style="border: solid" >{{ .Name }}</td>
+	<td style="border: solid" >{{ .Email }}</td>
+</tr>
+{{ end }}
+
+{{ block "oob-contact" . }}
+<tbody hx-swap-oob="afterbegin:#contacts-table">
+	<tr>
+		<td style="border: solid" >{{ .Name }}</td>
+		<td style="border: solid" >{{ .Email }}</td>
+	</tr>
+</tbody>
 {{ end }}
