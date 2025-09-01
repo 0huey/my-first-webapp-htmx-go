@@ -3,8 +3,8 @@ package main
 import(
 	"net/http"
 	"html/template"
-	"fmt"
-)
+	"log"
+	"reflect")
 
 type Contact struct {
 	Name string
@@ -44,18 +44,18 @@ func main() {
 
 	http.HandleFunc("POST /count", HandleCount)
 
-	http.HandleFunc("POST /contacts", HandleContact)
+	http.HandleFunc("/contacts", HandleContact)
 
-	http.ListenAndServe(":8080", nil)
+	log.Fatalln(http.ListenAndServe(":8080", nil))
 }
 
 func HandleRoot(w http.ResponseWriter, req *http.Request) {
-	Render(w, "index", context)
+	Render(w, req, "index", context)
 }
 
 func HandleCount(w http.ResponseWriter, req *http.Request) {
 	context.Count++
-	Render(w, "count", context)
+	Render(w, req, "count", context)
 }
 
 func HandleContact(w http.ResponseWriter, req *http.Request) {
@@ -73,17 +73,17 @@ func HandleContact(w http.ResponseWriter, req *http.Request) {
 		temp_context.FormErrors.Values["name"] = name
 		temp_context.FormErrors.Values["email"] = email
 		temp_context.FormErrors.Errors["message"] = "that email address already exists retard"
-		RenderError(w, "email form", temp_context, http.StatusConflict)
+		RenderError(w, req, "email form", temp_context, http.StatusConflict)
 		return
 	}
 
 	new := NewContact(name, email)
 	context.Contacts.AddContact(new)
-	Render(w, "oob-contact", new)
-	Render(w, "email form", context)
+	Render(w, req, "oob-contact", new)
+	Render(w, req, "email form", context)
 }
 
-func Render(w http.ResponseWriter, block string, context any) {
+func Render(w http.ResponseWriter, req *http.Request, block string, context any) {
 	t := template.Must(template.ParseGlob("templates/*.html"))
 
 	w.Header().Add("Cache-Control", "no-cache")
@@ -91,14 +91,41 @@ func Render(w http.ResponseWriter, block string, context any) {
 	err := t.ExecuteTemplate(w, block, context)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
+
+	private := reflect.ValueOf(w).Elem()
+
+	log.Println(req.RemoteAddr,
+		req.Method,
+		req.RequestURI,
+		private.FieldByName("status"),
+		private.FieldByName("written"),
+	)
 }
 
-func RenderError(w http.ResponseWriter, block string, context any, code int) {
+func RenderError(w http.ResponseWriter, req *http.Request, block string, context any, code int) {
 	w.WriteHeader(code)
 	w.Header().Add("Cache-Control", "no-cache")
-	Render(w, block, context)
+
+	t := template.Must(template.ParseGlob("templates/*.html"))
+
+	w.Header().Add("Cache-Control", "no-cache")
+
+	err := t.ExecuteTemplate(w, block, context)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	private := reflect.ValueOf(w).Elem()
+
+	log.Println(req.RemoteAddr,
+		req.Method,
+		req.RequestURI,
+		code,
+		private.FieldByName("written"),
+	)
 }
 
 func NewContact(name string, email string) Contact {
