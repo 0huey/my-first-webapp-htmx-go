@@ -1,0 +1,78 @@
+html {
+	color: white;
+	background-color: #303030;
+	font-size: medium;
+	overflow-wrap: anywhere;
+	text-wrap: balance;
+	display:flex;
+	place-content:center;
+}
+
+header {
+	font-size: 30px;
+	padding: 5px;
+	color: white;
+	background-color: grey;
+}
+
+main {
+	margin-top: 10px;
+	border: 1px solid white;
+	padding: 5px;
+}
+
+div {
+	padding-bottom: 10px;
+}
+
+table {
+	border: 3px solid grey;
+	padding: 5px;
+	border-collapse: collapse;
+	text-align: center;
+}
+
+th {
+	font-size: larger;
+	padding: 5px 30px 5px 30px;
+	overflow-wrap:break-word;
+}
+
+td {
+	border: 1px solid grey;
+	padding: 5px 30px 5px 30px;
+}
+
+label {
+	margin: 5px;
+}
+
+input {
+	padding: 5px;
+	margin: 1px;
+	border: 3px solid grey;
+	border-radius: 6px;
+	outline:none;
+	transition: border-color 0.2s ease;
+}
+
+input:focus {
+	border-color: red;
+}
+
+button {
+	cursor: pointer;
+	padding: 5px;
+	margin: 2px;
+	border: none;
+	border-radius: 6px;
+	transition: background 0.1s ease, transform 0.1s ease;
+ }
+
+button:hover {
+	transform: translateY(-1px);
+}
+
+button:active {
+	background-color: grey;
+}

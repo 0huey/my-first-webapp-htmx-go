@@ -37,6 +37,9 @@ func main() {
 	context.Contacts.AddContact(NewContact("john smith", "js@example.com"))
 	context.Contacts.AddContact(NewContact("person", "person@example.com"))
 
+	http.Handle("GET /static/",
+		http.StripPrefix("/static", http.FileServer(http.Dir("static"))))
+
 	http.HandleFunc("/", HandleRoot)
 
 	http.HandleFunc("POST /count", HandleCount)
