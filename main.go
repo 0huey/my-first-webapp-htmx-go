@@ -119,9 +119,9 @@ func LogRequests(httpMux *http.ServeMux) http.HandlerFunc {
 		privateData := reflect.ValueOf(w).Elem()
 
 		log.Println(req.RemoteAddr,
+			privateData.FieldByName("status"),
 			req.Method,
 			req.RequestURI,
-			privateData.FieldByName("status"),
 			"req-size:",
 			req.ContentLength,
 			"resp-size:",
