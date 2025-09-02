@@ -37,16 +37,18 @@ func main() {
 	context.Contacts.AddContact(NewContact("john smith", "js@example.com"))
 	context.Contacts.AddContact(NewContact("person", "person@example.com"))
 
-	http.Handle("GET /static/",
-		http.StripPrefix("/static", http.FileServer(http.Dir("static"))))
+	httpMux := http.NewServeMux()
 
-	http.HandleFunc("/", HandleRoot)
+	httpMux.HandleFunc("/{$}", HandleRoot)
+	httpMux.HandleFunc("/count", HandleCount)
+	httpMux.HandleFunc("/contacts", HandleContact)
 
-	http.HandleFunc("POST /count", HandleCount)
+	httpMux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	httpMux.Handle("/favicon.ico", http.FileServer(http.Dir("static")))
 
-	http.HandleFunc("/contacts", HandleContact)
+	httpMux.Handle("/", http.NotFoundHandler())
 
-	log.Fatalln(http.ListenAndServe(":8080", nil))
+	log.Fatalln(http.ListenAndServe(":8080", LogRequests(httpMux)))
 }
 
 func HandleRoot(w http.ResponseWriter, req *http.Request) {
@@ -93,15 +95,6 @@ func Render(w http.ResponseWriter, req *http.Request, block string, context any)
 	if err != nil {
 		log.Println(err)
 	}
-
-	private := reflect.ValueOf(w).Elem()
-
-	log.Println(req.RemoteAddr,
-		req.Method,
-		req.RequestURI,
-		private.FieldByName("status"),
-		private.FieldByName("written"),
-	)
 }
 
 func RenderError(w http.ResponseWriter, req *http.Request, block string, context any, code int) {
@@ -110,22 +103,33 @@ func RenderError(w http.ResponseWriter, req *http.Request, block string, context
 
 	t := template.Must(template.ParseGlob("templates/*.html"))
 
-	w.Header().Add("Cache-Control", "no-cache")
-
 	err := t.ExecuteTemplate(w, block, context)
 
 	if err != nil {
 		log.Println(err)
 	}
+}
 
-	private := reflect.ValueOf(w).Elem()
+func LogRequests(httpMux *http.ServeMux) http.HandlerFunc {
+	return func (w http.ResponseWriter, req *http.Request) {
 
-	log.Println(req.RemoteAddr,
-		req.Method,
-		req.RequestURI,
-		code,
-		private.FieldByName("written"),
-	)
+		handler, pattern := httpMux.Handler(req)
+		handler.ServeHTTP(w, req)
+
+		privateData := reflect.ValueOf(w).Elem()
+
+		log.Println(req.RemoteAddr,
+			req.Method,
+			req.RequestURI,
+			privateData.FieldByName("status"),
+			"req-size:",
+			req.ContentLength,
+			"resp-size:",
+			privateData.FieldByName("written"),
+			"route:",
+			pattern,
+		)
+	}
 }
 
 func NewContact(name string, email string) Contact {
