@@ -15,7 +15,6 @@ header {
 	background-color: grey;
 }
 
-
 main {
 	margin-top: 10px;
 	border: 1px solid white;
@@ -76,4 +75,8 @@ button:hover {
 
 button:active {
 	background-color: grey;
+}
+
+button.danger:hover {
+	background-color: red
 }

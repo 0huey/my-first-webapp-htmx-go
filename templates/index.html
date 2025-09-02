@@ -79,14 +79,17 @@
 <tr>
 	<td>{{ .Name }}</td>
 	<td>{{ .Email }}</td>
+	<td>
+		<form hx-delete="/contacts" hx-target="closest tr">
+			<input type="hidden" name="id" value="{{ .Id }}" />
+			<button class="danger" type="submit">Delete</button>
+		</form>
+	</td>
 </tr>
 {{ end }}
 
 {{ block "oob-contact" . }}
 <tbody hx-swap-oob="afterbegin:#contacts-table">
-	<tr>
-		<td>{{ .Name }}</td>
-		<td>{{ .Email }}</td>
-	</tr>
+	{{ template "contact" . }}
 </tbody>
 {{ end }}
