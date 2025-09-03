@@ -7,16 +7,7 @@
 		<link rel="stylesheet" href="/static/style.css" />
 		<title>My First Web App in HTMX/Go</title>
 		<script src="https://unpkg.com/htmx.org/dist/htmx.min.js"></script>
-		<script>
-			document.addEventListener("DOMContentLoaded", (event) => {
-				document.body.addEventListener('htmx:beforeSwap', function(evt) {
-					if (evt.detail.xhr.status === 409) {
-						evt.detail.shouldSwap = true;
-						evt.detail.isError = false;
-					}
-				});
-			})
-		</script>
+		<script src="/static/events.js"></script>
 	</head>
 	<body>
 		<header>
@@ -80,7 +71,7 @@
 	<td>{{ .Name }}</td>
 	<td>{{ .Email }}</td>
 	<td>
-		<form hx-delete="/contacts" hx-target="closest tr">
+		<form hx-delete="/contacts" hx-target="closest tr" hx-confirm="Really delete {{ .Email }}?">
 			<input type="hidden" name="id" value="{{ .Id }}" />
 			<button class="danger" type="submit">Delete</button>
 		</form>

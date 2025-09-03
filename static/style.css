@@ -67,6 +67,7 @@ button {
 	border: none;
 	border-radius: 6px;
 	transition: background 0.1s ease, transform 0.1s ease;
+	overflow-wrap:break-word;
  }
 
 button:hover {
