@@ -13,7 +13,7 @@ func DB_Init() *sql.DB {
 
 	db, err = sql.Open("sqlite3", "site.sqlite3")
 	if err != nil {
-		log.Fatal("SQL:", err)
+		log.Panic("SQL:", err)
 	}
 
 	_, err = db.Exec(`
@@ -23,7 +23,7 @@ func DB_Init() *sql.DB {
 		email TEXT NOT NULL);`)
 
 	if err != nil {
-		log.Fatal("SQL:", err)
+		log.Panic("SQL:", err)
 	}
 
 	_, err = db.Exec(`
@@ -32,7 +32,7 @@ func DB_Init() *sql.DB {
 		count INTEGER);`)
 
 	if err != nil {
-		log.Fatal("SQL:", err)
+		log.Panic("SQL:", err)
 	}
 
 	DB_IncCount()
@@ -53,7 +53,7 @@ func DB_IncCount() int {
 	}
 
 	if err != nil {
-		log.Fatal("SQL:", err)
+		log.Panic(err)
 	}
 
 	return count
@@ -76,8 +76,10 @@ func DB_GetOneContact(id int) ContactEntry {
 	var c ContactEntry
 	row := db.QueryRow("SELECT * FROM contacts WHERE id = ?;", id)
 	err := row.Scan(&c.Id, &c.Name, &c.Email)
-	if err != nil {
-		log.Fatal(err)
+	if err == sql.ErrNoRows {
+		return c
+	} else if err != nil {
+		log.Panic(err)
 	}
 	return c
 }
@@ -86,23 +88,23 @@ func DB_GetAllContacts() []ContactEntry {
 	var contacts []ContactEntry
 	var con ContactEntry
 
-	rows, err := db.Query("SELECT id, name, email FROM contacts;")
+	rows, err := db.Query("SELECT id, name, email FROM contacts ORDER BY LOWER(name);")
 	defer rows.Close()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	for rows.Next() {
 		err = rows.Scan(&con.Id, &con.Name, &con.Email)
 		if err != nil {
-			log.Fatal(err)
+			log.Panic(err)
 		}
 		contacts = append(contacts, con)
 	}
 
 	if err = rows.Err(); err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	return contacts
@@ -117,28 +119,28 @@ func DB_ContactEmailExists(c ContactEntry) bool {
 	if err == sql.ErrNoRows {
 		return false
 	} else if err != nil {
-		log.Fatal(row.Err())
+		log.Panic(err)
 	}
 	return true
 }
 
 func DB_AddContact(c ContactEntry) {
-	_, err := db.Exec("INSERT INTO contacts (name, email) VALUES (?, ?)", c.Name, c.Email)
+	_, err := db.Exec("INSERT INTO contacts (name, email) VALUES (?, ?);", c.Name, c.Email)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }
 
 func DB_DeleteContact(id int) {
-		_, err := db.Exec("DELETE FROM contacts WHERE id = ?", id)
+		_, err := db.Exec("DELETE FROM contacts WHERE id = ?;", id)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }
 
 func DB_UpdateContact(c ContactEntry) {
-	_, err := db.Exec("UPDATE contacts SET name = ?, email = ? WHERE id = ?", c.Name, c.Email, c.Id)
+	_, err := db.Exec("UPDATE contacts SET name = ?, email = ? WHERE id = ?;", c.Name, c.Email, c.Id)
 		if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }

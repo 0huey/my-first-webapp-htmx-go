@@ -58,7 +58,7 @@
 		</tr>
 	</thead>
 	<tbody id="contacts-tbody">
-	{{ range .Contacts }}
+	{{ range . }}
 		<tr>{{ template "contact-row" . }}</tr>
 	{{ end }}
 	</tbody>

@@ -15,12 +15,16 @@ const (
 	DELETE = "DELETE"
 )
 
+var template_glob *template.Template
+
 type IndexContext struct {
 	Count int
 }
 
 func main() {
 	defer DB_Init().Close()
+
+	template_glob = template.Must(template.ParseGlob("templates/*.html"))
 
 	http.HandleFunc("/{$}", HandleRoot)
 	http.HandleFunc("/count", HandleCount)
@@ -58,27 +62,21 @@ func HandleCount(w http.ResponseWriter, req *http.Request) {
 }
 
 func Render(w http.ResponseWriter, block string, context any) {
-	t := template.Must(template.ParseGlob("templates/*.html"))
-
 	w.Header().Add("Cache-Control", "no-cache")
-
-	err := t.ExecuteTemplate(w, block, context)
+	err := template_glob.ExecuteTemplate(w, block, context)
 
 	if err != nil {
-		log.Println(err)
+		log.Panic(err)
 	}
 }
 
 func RenderError(w http.ResponseWriter, req *http.Request, block string, context any, code int) {
 	w.WriteHeader(code)
 	w.Header().Add("Cache-Control", "no-cache")
-
-	t := template.Must(template.ParseGlob("templates/*.html"))
-
-	err := t.ExecuteTemplate(w, block, context)
+	err := template_glob.ExecuteTemplate(w, block, context)
 
 	if err != nil {
-		log.Println(err)
+		log.Panic(err)
 	}
 }
 

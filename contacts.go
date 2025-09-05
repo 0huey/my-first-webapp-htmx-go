@@ -14,10 +14,6 @@ type ContactEntry struct {
 	Email string
 }
 
-type ContactList struct {
-	Contacts []ContactEntry
-}
-
 type FormData struct {
 	Values map[string]string
 	Errors map[string]string
@@ -34,10 +30,14 @@ func HandleContacts(w http.ResponseWriter, req *http.Request) {
 
 				id, err := strconv.Atoi(str_id)
 				if err != nil {
-					w.WriteHeader(http.StatusBadRequest)
+					http.Error(w, "Malformed ID", http.StatusBadRequest)
 					return
 				}
 				contact := DB_GetOneContact(id)
+				if contact.IsNull() {
+					http.NotFound(w, req)
+					return
+				}
 				Render(w, "contact-row", contact)
 
 			} else if len(str_edit) > 0 {
@@ -45,16 +45,19 @@ func HandleContacts(w http.ResponseWriter, req *http.Request) {
 
 				edit_id, err := strconv.Atoi(str_edit)
 				if err != nil {
-					w.WriteHeader(http.StatusBadRequest)
+					http.Error(w, "Malformed ID", http.StatusBadRequest)
 					return
 				}
 				contact := DB_GetOneContact(edit_id)
+				if contact.IsNull() {
+					http.NotFound(w, req)
+					return
+				}
 				form := contact.ToFormData()
 				Render(w, "contact-edit-form", form)
 
 			} else {
-				all := ContactList{Contacts: DB_GetAllContacts()}
-				Render(w, "contacts-page", all)
+				Render(w, "contacts-page", DB_GetAllContacts())
 			}
 		}
 
@@ -65,7 +68,7 @@ func HandleContacts(w http.ResponseWriter, req *http.Request) {
 			}
 
 			if len(new.Name) == 0 || len(new.Email) == 0 {
-				w.WriteHeader(http.StatusBadRequest)
+				http.Error(w, "Malformed data", http.StatusBadRequest)
 				return
 			}
 			validateAndInsertNewContact(new, w, req)
@@ -74,35 +77,36 @@ func HandleContacts(w http.ResponseWriter, req *http.Request) {
 		case PUT: {
 			id, err := strconv.Atoi(req.URL.Query().Get("id"))
 			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
+				http.Error(w, "Malformed ID", http.StatusBadRequest)
 				return
 			}
-			new := ContactEntry {Id: id,
+			new := ContactEntry { Id: id,
 				Name:  req.PostFormValue("name"),
-				Email: req.PostFormValue("email"),
-			}
+				Email: req.PostFormValue("email") }
 			validateAndInsertNewContact(new, w, req)
 		}
 
 		case DELETE: {
 			id, err := strconv.Atoi(req.URL.Query().Get("id"))
 			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
+				http.Error(w, "Malformed ID", http.StatusBadRequest)
 				return
 			}
 
 			DB_DeleteContact(id)
-			w.WriteHeader(http.StatusOK)
+			//w.WriteHeader(http.StatusOK) will default to OK
+			return
 		}
 
 		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
+			http.Error(w, "Malformed ID", http.StatusBadRequest)
+			return
 	}
 }
 
 func validateAndInsertNewContact(new ContactEntry, w http.ResponseWriter, req *http.Request) {
 	if len(new.Name) == 0 || len(new.Email) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "Malformed data", http.StatusBadRequest)
 		return
 	}
 
@@ -144,6 +148,7 @@ func validateAndInsertNewContact(new ContactEntry, w http.ResponseWriter, req *h
 			Render(w, "contact-row", new)
 		default:
 			log.Println("ERROR unknown method", req.Method, "in validateAndInsertNewContact")
+			return
 	}
 }
 
@@ -160,4 +165,11 @@ func (c ContactEntry) ToFormData() FormData {
 	d.Values["Name"] = c.Name
 	d.Values["Email"] = c.Email
 	return d
+}
+
+func (c ContactEntry) IsNull() bool {
+	if c.Id == 0 {
+		return true
+	}
+	return false
 }
