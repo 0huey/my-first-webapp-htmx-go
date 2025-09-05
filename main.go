@@ -5,6 +5,7 @@ import(
 	"html/template"
 	"log"
 	"reflect"
+	"time"
 )
 
 const (
@@ -85,7 +86,10 @@ func LogRequests(mux *http.ServeMux) http.HandlerFunc {
 	return func (w http.ResponseWriter, req *http.Request) {
 
 		handler, pattern := mux.Handler(req)
+
+		start_time := time.Now()
 		handler.ServeHTTP(w, req)
+		elapsed := time.Now().Sub(start_time)
 
 		privateData := reflect.ValueOf(w).Elem()
 
@@ -104,6 +108,7 @@ func LogRequests(mux *http.ServeMux) http.HandlerFunc {
 			privateData.FieldByName("written"),
 			"route:",
 			pattern,
+			elapsed,
 		)
 	}
 }
