@@ -1,0 +1,117 @@
+{{ block "contacts-page" . }}
+<!doctype html>
+<html lang="en">
+	<head>
+		{{ template "Standard-Meta-Headers" }}
+		<title>Contacts</title>
+	</head>
+	<body>
+		<header>
+			{{ template "Nav-Bar" }}
+			<span class="page-title">A contacts application</span>
+		</header>
+		<main>
+			<div>
+				{{ template "new-contact-form-blank" . }}
+			</div>
+			<div>
+				{{ template "contacts-table" . }}
+			</div>
+		</main>
+	</body>
+</html>
+{{ end }}
+
+{{ block "new-contact-form-blank" . }}
+<form hx-post="/contacts" hx-swap="innerHTML">
+	<label>name:</label><input type="text" name="name" />
+	<br/>
+	<label>email:</label><input	type="email" name="email" />
+	<br/>
+	<button type="submit">Create Contact</button>
+</form>
+{{ end }}
+
+{{ block "new-contact-form-with-error" . }}
+<form hx-post="/contacts" hx-swap="innerHTML">
+	<label>name:</label><input
+		{{ if .Values.Name }} value="{{ .Values.Name }}" {{ end }}
+		type="text" name="name" />
+	<br/>
+	<label>email:</label><input
+		{{ if .Values.Email }} value="{{ .Values.Email }}" {{ end }}
+		type="email" name="email" />
+	<br/>
+	{{ if .Errors.Message }}
+		<div class="error">{{ .Errors.Message }}</div>
+	{{ end }}
+	<button type="submit">Create Contact</button>
+</form>
+{{ end }}
+
+{{ block "contacts-table" . }}
+<table>
+	<thead>
+		<tr>
+			<th>Name</th>
+			<th>Email</th>
+		</tr>
+	</thead>
+	<tbody id="contacts-tbody">
+	{{ range .Contacts }}
+		<tr>{{ template "contact-row" . }}</tr>
+	{{ end }}
+	</tbody>
+</table>
+{{ end }}
+
+{{ block "contact-row" . }}
+<td>{{ .Name }}</td>
+<td>{{ .Email }}</td>
+<td>
+	<button name="edit"
+		value="{{ .Id }}"
+		hx-get="/contacts"
+		hx-target="closest tr"
+		>Edit
+	</button>
+	<button class="danger"
+		name="id"
+		value="{{ .Id }}"
+		hx-delete="/contacts"
+		hx-target="closest tr"
+		hx-confirm="Really delete {{ .Email }}?"
+		>Delete
+	</button>
+</td>
+{{ end }}
+
+{{ block "oob-contact-add" . }}
+<tbody hx-swap-oob="afterbegin:#contacts-tbody">
+	{{ template "contact-row" . }}
+</tbody>
+{{ end }}
+
+{{ block "contact-edit-form" . }}
+<td><label>name:</label><input autofocus value="{{ .Values.Name }}" type="text" name="name" /></td>
+<td>
+	<label>email:</label><input value="{{ .Values.Email }}" type="email" name="email" />
+	{{ if .Errors.Message }}
+		<div class="error">{{ .Errors.Message }}</div>
+	{{ end }}
+</td>
+<td>
+	<button
+		hx-put="/contacts?id={{ .Values.Id }}"
+		hx-include="closest tr"
+		hx-target="closest tr"
+		>Update
+	</button>
+	<button name="id"
+		value="{{ .Values.Id }}"
+		hx-get="/contacts"
+		hx-target="closest tr"
+		>Cancel
+	</button>
+</td>
+{{ end }}

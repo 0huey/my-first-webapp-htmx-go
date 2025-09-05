@@ -2,85 +2,41 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<link rel="stylesheet" href="/static/style.css" />
+		{{ template "Standard-Meta-Headers" }}
 		<title>My First Web App in HTMX/Go</title>
-		<script src="https://unpkg.com/htmx.org/dist/htmx.min.js"></script>
-		<script src="/static/events.js"></script>
 	</head>
 	<body>
 		<header>
-			A contacts application
+			{{ template "Nav-Bar" }}
+			<span class="page-title">A Go/HTMX Web App</span>
 		</header>
 		<main>
 			<div>
-				<button hx-post="/count" hx-target="#count" hx-swap="outerHTML">number go up</button>
 				{{ template "count" . }}
-			</div>
-			<div>
-				{{ template "email form" . }}
-			</div>
-			<div>
-				{{ template "contacts" . }}
+				<br />
+				<button hx-post="/count" hx-target="#count" hx-swap="outerHTML">number go up</button>
 			</div>
 		</main>
 	</body>
 </html>
 {{ end }}
 
+{{ block "Standard-Meta-Headers" . }}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="/static/style.css" />
+<script src="https://unpkg.com/htmx.org/dist/htmx.min.js"></script>
+<script src="/static/events.js"></script>
+{{ end }}
+
+{{ block "Nav-Bar" . }}
+<div class="navbar">
+	<a href="/"><button class="navbar">Home</button></a>
+	<a href="/contacts"><button class="navbar">Contacts</button></a>
+</div>
+<hr />
+{{ end }}
+
 {{ block "count" . }}
 <span id="count">Count {{ .Count }}</span>
-{{ end }}
-
-{{ block "email form" . }}
-<form hx-post="/contacts" hx-swap="innerHTML">
-	<label>name:</label><input
-		{{ if .FormErrors.Values.name }} value="{{ .FormErrors.Values.name }}" {{ end }}
-		type="text" name="name" />
-	<br/>
-	<label>email:</label><input
-		{{ if .FormErrors.Values.email }} value="{{ .FormErrors.Values.email }}" {{ end }}
-		type="email" name="email" />
-	<br/>
-	{{ if .FormErrors.Errors.message }}
-		<div style="color: red">{{ .FormErrors.Errors.message }}</div>
-	{{ end }}
-	<button type="submit">Create Contact</button>
-</form>
-{{ end }}
-
-{{ block "contacts" . }}
-<table>
-	<thead>
-		<tr>
-			<th>Name</th>
-			<th>Email</th>
-		</tr>
-	</thead>
-	<tbody id="contacts-table">
-	{{ range .Contacts }}
-		{{ template "contact" . }}
-	{{ end }}
-	</tbody>
-</table>
-{{ end }}
-
-{{ block "contact" . }}
-<tr>
-	<td>{{ .Name }}</td>
-	<td>{{ .Email }}</td>
-	<td>
-		<form hx-delete="/contacts" hx-target="closest tr" hx-confirm="Really delete {{ .Email }}?">
-			<input type="hidden" name="id" value="{{ .Id }}" />
-			<button class="danger" type="submit">Delete</button>
-		</form>
-	</td>
-</tr>
-{{ end }}
-
-{{ block "oob-contact" . }}
-<tbody hx-swap-oob="afterbegin:#contacts-table">
-	{{ template "contact" . }}
-</tbody>
 {{ end }}

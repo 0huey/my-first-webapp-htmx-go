@@ -8,21 +8,27 @@ html {
 	place-content:center;
 }
 
+body {
+	width: 75%;
+}
+
 header {
-	font-size: 30px;
 	padding: 5px;
-	color: white;
 	background-color: grey;
 }
 
-main {
-	margin-top: 10px;
-	border: 1px solid white;
-	padding: 5px;
+div {
+	padding-top: 10px;
+	padding-bottom: 10px;
 }
 
-div {
-	padding-bottom: 10px;
+div.navbar {
+	padding: 5px;
+	height: 50%;
+	background-color: #9904741c;
+}
+div.error {
+	color: red;
 }
 
 table {
@@ -30,6 +36,7 @@ table {
 	padding: 5px;
 	border-collapse: collapse;
 	text-align: center;
+	width: 100%
 }
 
 th {
@@ -80,4 +87,8 @@ button:active {
 
 button.danger:hover {
 	background-color: red
+}
+
+span.page-title {
+	font-size: 30px;
 }
