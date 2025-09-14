@@ -40,6 +40,10 @@ func DB_Init() *sql.DB {
 	return db
 }
 
+func wildcardTerm(term string) string {
+	return "%" + term + "%"
+}
+
 func DB_IncCount() int {
 	row := db.QueryRow("UPDATE count SET count = count+1 WHERE id = 1 RETURNING count;")
 
@@ -89,6 +93,36 @@ func DB_GetAllContacts() []ContactEntry {
 	var con ContactEntry
 
 	rows, err := db.Query("SELECT id, name, email FROM contacts ORDER BY LOWER(name);")
+	defer rows.Close()
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	for rows.Next() {
+		err = rows.Scan(&con.Id, &con.Name, &con.Email)
+		if err != nil {
+			log.Panic(err)
+		}
+		contacts = append(contacts, con)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Panic(err)
+	}
+
+	return contacts
+}
+
+func DB_GetAllContactsSearch(term string) []ContactEntry {
+	var contacts []ContactEntry
+	var con ContactEntry
+
+	term = wildcardTerm(term)
+
+	rows, err := db.Query(`SELECT id, name, email FROM contacts
+		where name LIKE ? OR email LIKE ?
+		ORDER BY LOWER(name);`, term, term)
 	defer rows.Close()
 
 	if err != nil {

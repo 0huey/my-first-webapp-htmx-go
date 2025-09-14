@@ -15,6 +15,15 @@
 				{{ template "new-contact-form-blank" . }}
 			</div>
 			<div>
+				<input type="search"
+				   name="search"
+				   placeholder="Begin Typing To Search Users..."
+				   hx-get="/contacts"
+				   hx-trigger="input changed delay:500ms, keyup[key=='Enter'], load"
+				   hx-target="#contacts-table"
+				   hx-swap="outerHTML" />
+			</div>
+			<div>
 				{{ template "contacts-table" . }}
 			</div>
 		</main>
@@ -50,7 +59,7 @@
 {{ end }}
 
 {{ block "contacts-table" . }}
-<table>
+<table id="contacts-table">
 	<thead>
 		<tr>
 			<th>Name</th>

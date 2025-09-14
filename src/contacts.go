@@ -22,13 +22,12 @@ type FormData struct {
 func HandleContacts(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 		case GET: {
-			str_id := req.URL.Query().Get("id")
-			str_edit := req.URL.Query().Get("edit")
+			params := req.URL.Query();
 
-			if len(str_id) > 0 {
+			if params.Has("id") {
 				//GET 1 contact
 
-				id, err := strconv.Atoi(str_id)
+				id, err := strconv.Atoi(params.Get("id"))
 				if err != nil {
 					http.Error(w, "Malformed ID", http.StatusBadRequest)
 					return
@@ -40,10 +39,10 @@ func HandleContacts(w http.ResponseWriter, req *http.Request) {
 				}
 				Render(w, "contact-row", contact)
 
-			} else if len(str_edit) > 0 {
+			} else if params.Has("edit") {
 				// send edit form
 
-				edit_id, err := strconv.Atoi(str_edit)
+				edit_id, err := strconv.Atoi(params.Get("edit"))
 				if err != nil {
 					http.Error(w, "Malformed ID", http.StatusBadRequest)
 					return
@@ -55,6 +54,9 @@ func HandleContacts(w http.ResponseWriter, req *http.Request) {
 				}
 				form := contact.ToFormData()
 				Render(w, "contact-edit-form", form)
+
+			} else if params.Has("search") {
+				Render(w, "contacts-table", DB_GetAllContactsSearch(params.Get("search")))
 
 			} else {
 				Render(w, "contacts-page", DB_GetAllContacts())
