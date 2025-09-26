@@ -59,7 +59,7 @@ func HandleContacts(w http.ResponseWriter, req *http.Request) {
 				Render(w, "contacts-table", DB_GetAllContactsSearch(params.Get("search")))
 
 			} else {
-				Render(w, "contacts-page", DB_GetAllContacts())
+				Render(w, "contacts-page", nil)
 			}
 		}
 

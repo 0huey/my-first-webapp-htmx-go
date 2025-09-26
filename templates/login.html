@@ -1,0 +1,39 @@
+{{ block "login-page" . }}
+<!doctype html>
+<html lang="en">
+	<head>
+		{{ template "Standard-Meta-Headers" }}
+		<title>Login - My First Web App in HTMX/Go</title>
+	</head>
+	<body>
+		<header>
+			{{ template "Nav-Bar" }}
+			<span class="page-title">Log into my Go/HTMX Web App</span>
+		</header>
+		<main>
+			<div>
+				{{ if .Username }}
+					{{ template "login-page-username" . }}
+				{{ else }}
+					{{ template "login-page-form" . }}
+				{{ end }}
+			</div>
+		</main>
+	</body>
+</html>
+{{ end }}
+
+{{ block "login-page-username" . }}
+<h2>Welcome {{ .Username }}!</h2>
+{{ end }}
+
+{{ block "login-page-form" . }}
+	<form hx-post="/login" hx-swap="outerHTML">
+		{{ if .Error }}<div class="danger">{{ .Error }}</div>{{ end }}
+		<label>name:</label><input type="text" name="username" />
+		<br/>
+		<label>password:</label><input type="password" name="password" />
+		<br/>
+		<button type="submit">Login</button>
+	</form>
+{{ end }}

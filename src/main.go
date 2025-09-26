@@ -26,13 +26,14 @@ func main() {
 
 	template_glob = template.Must(template.ParseGlob("templates/*.html"))
 
-	http.HandleFunc("/{$}", HandleRoot)
-	http.HandleFunc("/count", HandleCount)
-
-	http.HandleFunc("/contacts", HandleContacts)
+	http.HandleFunc("/login", HandleLogin)
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.Handle("/favicon.ico", http.FileServer(http.Dir("static")))
+
+	http.HandleFunc("/{$}", LoginRequiredWrapper(HandleRoot))
+	http.HandleFunc("/count", LoginRequiredWrapper(HandleCount))
+	http.HandleFunc("/contacts", LoginRequiredWrapper(HandleContacts))
 
 	http.Handle("/", http.NotFoundHandler())
 
@@ -46,7 +47,7 @@ func HandleRoot(w http.ResponseWriter, req *http.Request) {
 			Render(w, "index", context)
 
 		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 }
 
@@ -57,7 +58,7 @@ func HandleCount(w http.ResponseWriter, req *http.Request) {
 			Render(w, "count", context)
 
 		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 }
 
@@ -89,7 +90,9 @@ func LogRequests(mux *http.ServeMux) http.HandlerFunc {
 		handler.ServeHTTP(w, req)
 		elapsed := time.Now().Sub(start_time)
 
+
 		privateData := reflect.ValueOf(w).Elem()
+
 
 		status := privateData.FieldByName("status").Int()
 		if status == 0 {

@@ -2,9 +2,24 @@ package main
 
 import(
 	"log"
+	"strings"
 	"database/sql"
+	"encoding/hex"
+	"crypto/rand"
+	"errors"
+	"time"
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/argon2"
 )
+
+const (
+	SQL_TRUE  int = 1
+	SQL_FALSE int = 0
+)
+
+var DB_ErrorUnknownUserOrPass = errors.New("Unknown username or password")
+var DB_ErrorAccountLocked = errors.New("Account locked")
+var DB_ErrorLoginSessionExpired = errors.New("Login session expired")
 
 var db *sql.DB
 
@@ -29,10 +44,42 @@ func DB_Init() *sql.DB {
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS count (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		count INTEGER);`)
+		count INTEGER NOT NULL);`)
 
 	if err != nil {
 		log.Panic("SQL:", err)
+	}
+
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS user_auth (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT NOT NULL,
+		salt TEXT NOT NULL,
+		hash TEXT NOT NULL,
+		enabled INTEGER NOT NULL);`)
+
+	if err != nil {
+		log.Panic("SQL:", err)
+	}
+
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS user_login_tokens (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		token TEXT NOT NULL,
+		expires INT NOT NULL);`)
+
+	if err != nil {
+		log.Panic("SQL:", err)
+	}
+
+	row := db.QueryRow("SELECT username FROM user_auth WHERE username = 'admin';")
+	var name string
+	err = row.Scan(&name)
+	if err == sql.ErrNoRows {
+		DB_UserRegister("admin", "admin")
+	} else if err != nil {
+		log.Panic(err)
 	}
 
 	DB_IncCount()
@@ -177,4 +224,97 @@ func DB_UpdateContact(c ContactEntry) {
 		if err != nil {
 		log.Panic(err)
 	}
+}
+
+func DB_UserRegister(name string, password string) {
+	salt := rand.Text()
+	hash := hashPassword(password, salt)
+
+	_, err := db.Exec("INSERT INTO user_auth (username, salt, hash, enabled) VALUES (?, ?, ?, ?);",
+		name, salt, hash, SQL_TRUE)
+
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+func DB_UserGetNameOfId(id int) (string, error) {
+	var username string
+	row := db.QueryRow("SELECT username FROM user_auth WHERE id = ?", id)
+
+	err := row.Scan(&username)
+
+	if err == sql.ErrNoRows {
+		return username, DB_ErrorUnknownUserOrPass
+	} else if err != nil {
+		log.Panic(err)
+	}
+
+	return username, nil
+}
+
+func DB_UserLogin(name string, password string) (LoginSession, error) {
+	var user_id int
+	var salt string
+	var hash string
+	var enabled int
+	var token LoginSession
+
+	row := db.QueryRow("SELECT id, salt, hash, enabled FROM user_auth WHERE username = ?;", name)
+
+	err := row.Scan(&user_id, &salt, &hash, &enabled)
+
+	if err == sql.ErrNoRows {
+		return token, DB_ErrorUnknownUserOrPass
+	} else if err != nil {
+		log.Panic(err)
+	}
+
+	hash2 := hashPassword(password, salt)
+
+	if strings.Compare(hash, hash2) != 0 {
+		return token, DB_ErrorUnknownUserOrPass
+	}
+
+	if enabled == SQL_FALSE {
+		return token, DB_ErrorAccountLocked
+	}
+
+	token.Username = name
+	token.Token = rand.Text() + rand.Text()
+	token.Expires = time.Now().UTC().Add(time.Hour * 12)
+
+	_, err = db.Exec("INSERT INTO user_login_tokens (user_id, token, expires) VALUES (?, ?, ?);",
+		user_id, token.Token, token.Expires.Unix())
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return token, nil
+}
+
+func DB_UserLookupLoginToken(token string) (string, error) {
+	var user_id int
+	var expires_unix int
+
+	row := db.QueryRow("SELECT user_id, expires FROM user_login_tokens WHERE token = ?;", token)
+
+	err := row.Scan(&user_id, &expires_unix)
+
+	if err == sql.ErrNoRows {
+		return "", DB_ErrorLoginSessionExpired
+
+	} else if err != nil {
+		log.Panic(err)
+	}
+
+	// add expiration
+
+	return DB_UserGetNameOfId(user_id)
+}
+
+func hashPassword(pass string, salt string) string {
+	digest := argon2.IDKey([]byte(pass), []byte(salt), 8, 64*1024, 4, 32)
+	return hex.EncodeToString(digest)
 }
