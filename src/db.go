@@ -1,13 +1,14 @@
 package main
 
-import(
-	"log"
-	"strings"
+import (
+	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
-	"crypto/rand"
 	"errors"
+	"log"
+	"strings"
 	"time"
+
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/argon2"
 )
@@ -205,15 +206,19 @@ func DB_ContactEmailExists(c ContactEntry) bool {
 	return true
 }
 
-func DB_AddContact(c ContactEntry) {
-	_, err := db.Exec("INSERT INTO contacts (name, email) VALUES (?, ?);", c.Name, c.Email)
+func DB_AddContact(c ContactEntry) ContactEntry {
+	row := db.QueryRow("INSERT INTO contacts (name, email) VALUES (?, ?) RETURNING id;", c.Name, c.Email)
+	var id int
+	err := row.Scan(&id)
 	if err != nil {
 		log.Panic(err)
 	}
+	c.Id = id
+	return c
 }
 
 func DB_DeleteContact(id int) {
-		_, err := db.Exec("DELETE FROM contacts WHERE id = ?;", id)
+	_, err := db.Exec("DELETE FROM contacts WHERE id = ?;", id)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -221,7 +226,7 @@ func DB_DeleteContact(id int) {
 
 func DB_UpdateContact(c ContactEntry) {
 	_, err := db.Exec("UPDATE contacts SET name = ?, email = ? WHERE id = ?;", c.Name, c.Email, c.Id)
-		if err != nil {
+	if err != nil {
 		log.Panic(err)
 	}
 }

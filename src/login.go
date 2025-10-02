@@ -1,28 +1,29 @@
 package main
 
 import (
+	"fmt"
+	_ "log"
 	"net/http"
 	"time"
-	_"log"
-	"fmt"
 )
 
 type LoginSession struct {
 	Username string
-	Token string
-	Expires time.Time
+	Token    string
+	Expires  time.Time
 }
 
 type LoginPageData struct {
 	Username string
-	Error string
+	Error    string
 }
 
 func HandleLogin(w http.ResponseWriter, req *http.Request) {
 	var data LoginPageData
 
 	switch req.Method {
-		case GET: {
+	case GET:
+		{
 			session, err := req.Cookie("session")
 			if err == nil {
 				username, err := DB_UserLookupLoginToken(session.Value)
@@ -38,7 +39,8 @@ func HandleLogin(w http.ResponseWriter, req *http.Request) {
 			Render(w, "login-page", data)
 		}
 
-		case POST: {
+	case POST:
+		{
 			username := req.PostFormValue("username")
 			password := req.PostFormValue("password")
 
@@ -61,13 +63,13 @@ func HandleLogin(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 
-		default:
-			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	default:
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 }
 
 func LoginRequiredWrapper(handler http.HandlerFunc) http.HandlerFunc {
-	return func (w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
 		session, err := req.Cookie("session")
 
 		if err != nil {

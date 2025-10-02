@@ -1,16 +1,17 @@
 package main
 
 import (
-	"net/http"
+	"html"
 	"log"
+	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
-	"regexp"
 )
 
 type ContactEntry struct {
-	Id int
-	Name string
+	Id    int
+	Name  string
 	Email string
 }
 
@@ -21,8 +22,9 @@ type FormData struct {
 
 func HandleContacts(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
-		case GET: {
-			params := req.URL.Query();
+	case GET:
+		{
+			params := req.URL.Query()
 
 			if params.Has("id") {
 				//GET 1 contact
@@ -63,8 +65,9 @@ func HandleContacts(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 
-		case POST: {
-			new := ContactEntry {
+	case POST:
+		{
+			new := ContactEntry{
 				Name:  req.PostFormValue("name"),
 				Email: req.PostFormValue("email"),
 			}
@@ -76,19 +79,21 @@ func HandleContacts(w http.ResponseWriter, req *http.Request) {
 			validateAndInsertNewContact(new, w, req)
 		}
 
-		case PUT: {
+	case PUT:
+		{
 			id, err := strconv.Atoi(req.URL.Query().Get("id"))
 			if err != nil {
 				http.Error(w, "Malformed ID", http.StatusBadRequest)
 				return
 			}
-			new := ContactEntry { Id: id,
+			new := ContactEntry{Id: id,
 				Name:  req.PostFormValue("name"),
-				Email: req.PostFormValue("email") }
+				Email: req.PostFormValue("email")}
 			validateAndInsertNewContact(new, w, req)
 		}
 
-		case DELETE: {
+	case DELETE:
+		{
 			id, err := strconv.Atoi(req.URL.Query().Get("id"))
 			if err != nil {
 				http.Error(w, "Malformed ID", http.StatusBadRequest)
@@ -96,13 +101,13 @@ func HandleContacts(w http.ResponseWriter, req *http.Request) {
 			}
 
 			DB_DeleteContact(id)
-			//w.WriteHeader(http.StatusOK) will default to OK
+			// status header will default to OK
 			return
 		}
 
-		default:
-			http.Error(w, "Malformed ID", http.StatusBadRequest)
-			return
+	default:
+		http.Error(w, "Malformed ID", http.StatusBadRequest)
+		return
 	}
 }
 
@@ -112,9 +117,12 @@ func validateAndInsertNewContact(new ContactEntry, w http.ResponseWriter, req *h
 		return
 	}
 
-	new.Name  = strings.TrimSpace(new.Name)
+	new.Name = strings.TrimSpace(new.Name)
+	new.Name = html.EscapeString(new.Name)
+
 	new.Email = strings.TrimSpace(new.Email)
 	new.Email = strings.ToLower(new.Email)
+	new.Email = html.EscapeString(new.Email)
 
 	form := new.ToFormData()
 
@@ -124,12 +132,12 @@ func validateAndInsertNewContact(new ContactEntry, w http.ResponseWriter, req *h
 		form.Errors["Message"] = "invalid email address format"
 
 		switch req.Method {
-			case POST:
-				RenderError(w, req, "new-contact-form-with-error", form, http.StatusConflict)
-			case PUT:
-				RenderError(w, req, "contact-edit-form", form, http.StatusConflict)
-			default:
-				log.Println("ERROR unknown method", req.Method, "in validateAndInsertNewContact")
+		case POST:
+			RenderError(w, req, "new-contact-form-with-error", form, http.StatusConflict)
+		case PUT:
+			RenderError(w, req, "contact-edit-form", form, http.StatusConflict)
+		default:
+			log.Println("ERROR unknown method", req.Method, "in validateAndInsertNewContact")
 		}
 		return
 	}
@@ -141,16 +149,16 @@ func validateAndInsertNewContact(new ContactEntry, w http.ResponseWriter, req *h
 	}
 
 	switch req.Method {
-		case POST:
-			DB_AddContact(new)
-			Render(w, "oob-contact-add", new)
-			Render(w, "new-contact-form-blank", newFormData())
-		case PUT:
-			DB_UpdateContact(new)
-			Render(w, "contact-row", new)
-		default:
-			log.Println("ERROR unknown method", req.Method, "in validateAndInsertNewContact")
-			return
+	case POST:
+		new = DB_AddContact(new)
+		Render(w, "oob-contact-add", new)
+		Render(w, "new-contact-form-blank", newFormData())
+	case PUT:
+		DB_UpdateContact(new)
+		Render(w, "contact-row", new)
+	default:
+		log.Println("ERROR unknown method", req.Method, "in validateAndInsertNewContact")
+		return
 	}
 }
 
@@ -170,8 +178,5 @@ func (c ContactEntry) ToFormData() FormData {
 }
 
 func (c ContactEntry) IsNull() bool {
-	if c.Id == 0 {
-		return true
-	}
-	return false
+	return c.Id == 0
 }

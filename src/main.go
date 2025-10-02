@@ -1,9 +1,9 @@
 package main
 
-import(
-	"net/http"
+import (
 	"html/template"
 	"log"
+	"net/http"
 	"reflect"
 	"time"
 )
@@ -42,23 +42,23 @@ func main() {
 
 func HandleRoot(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
-		case GET:
-			context := IndexContext{ Count: DB_GetCount() }
-			Render(w, "index", context)
+	case GET:
+		context := IndexContext{Count: DB_GetCount()}
+		Render(w, "index", context)
 
-		default:
-			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	default:
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 }
 
 func HandleCount(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
-		case POST:
-			context := IndexContext{ Count: DB_IncCount() }
-			Render(w, "count", context)
+	case POST:
+		context := IndexContext{Count: DB_IncCount()}
+		Render(w, "count", context)
 
-		default:
-			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	default:
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 }
 
@@ -82,17 +82,15 @@ func RenderError(w http.ResponseWriter, req *http.Request, block string, context
 }
 
 func LogRequests(mux *http.ServeMux) http.HandlerFunc {
-	return func (w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
 
 		handler, pattern := mux.Handler(req)
 
 		start_time := time.Now()
 		handler.ServeHTTP(w, req)
-		elapsed := time.Now().Sub(start_time)
-
+		elapsed := time.Since(start_time)
 
 		privateData := reflect.ValueOf(w).Elem()
-
 
 		status := privateData.FieldByName("status").Int()
 		if status == 0 {
